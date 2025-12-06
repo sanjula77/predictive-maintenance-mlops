@@ -6,35 +6,30 @@ Usage: python -m src.train_with_versioning --model lstm --epochs 20
 
 The model will be saved to models/v1/, models/v2/, etc. with:
 - model.pth: Trained model
-- scaler.pkl: Fitted scaler  
+- scaler.pkl: Fitted scaler
 - metadata.json: Model metadata (metrics, config, timestamp)
 """
+
 import argparse
+
 import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader, TensorDataset
 from tqdm import tqdm
 
-from src.config import (
-    SEED,
-    SEQ_LENGTH,
-    BATCH_SIZE,
-    EPOCHS,
-    LR,
-    FEATURE_COLS,
-)
-from src.data.load_data import load_train_data, load_test_data, load_rul_data
+from src.config import BATCH_SIZE, EPOCHS, FEATURE_COLS, LR, SEED, SEQ_LENGTH
+from src.data.load_data import load_rul_data, load_test_data, load_train_data
 from src.data.preprocessing import (
     calculate_rul,
     fit_scaler,
-    scale_features,
     generate_sequences,
     generate_test_sequences,
+    scale_features,
 )
-from src.models.architectures import get_model
 from src.model_registry import save_model_version
-from src.utils import set_seed, get_device
+from src.models.architectures import get_model
+from src.utils import get_device, set_seed
 
 
 def train_model(
@@ -48,7 +43,7 @@ def train_model(
 ) -> tuple[nn.Module, list]:
     """Train a PyTorch model."""
     model = model.to(device)
-    
+
     dataset = TensorDataset(X_train, y_train)
     loader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
 
@@ -59,7 +54,7 @@ def train_model(
     for epoch in range(epochs):
         model.train()
         running_loss = 0.0
-        for X_batch, y_batch in tqdm(loader, desc=f"Epoch {epoch+1}/{epochs}"):
+        for X_batch, y_batch in tqdm(loader, desc=f"Epoch {epoch + 1}/{epochs}"):
             X_batch, y_batch = X_batch.to(device), y_batch.to(device)
             optimizer.zero_grad()
             outputs = model(X_batch)
@@ -70,7 +65,7 @@ def train_model(
 
         epoch_loss = running_loss / len(loader.dataset)
         loss_history.append(epoch_loss)
-        print(f"Epoch [{epoch+1}/{epochs}] Loss: {epoch_loss:.4f}")
+        print(f"Epoch [{epoch + 1}/{epochs}] Loss: {epoch_loss:.4f}")
 
     return model, loss_history
 
@@ -83,18 +78,18 @@ def evaluate_model(
 ) -> tuple[float, float]:
     """Evaluate model and return RMSE and MAE."""
     import numpy as np
-    from sklearn.metrics import mean_squared_error, mean_absolute_error
-    
+    from sklearn.metrics import mean_absolute_error, mean_squared_error
+
     model.eval()
     model = model.to(device)
-    
+
     with torch.no_grad():
         y_pred = model(X_test).cpu().numpy().flatten()
-    
+
     y_test_np = y_test.cpu().numpy() if isinstance(y_test, torch.Tensor) else y_test
     rmse = np.sqrt(mean_squared_error(y_test_np, y_pred))
     mae = mean_absolute_error(y_test_np, y_pred)
-    
+
     return rmse, mae
 
 
@@ -136,45 +131,45 @@ def main():
         action="store_true",
         help="Disable automatic versioning (save to models/ directly)",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Set seed for reproducibility
     set_seed(SEED)
-    
+
     # Get device
     device = get_device()
     print(f"🔥 Using device: {device}")
-    
+
     # Load and preprocess data
     print("📂 Loading training data...")
     train_df = load_train_data()
     print(f"   Train dataset shape: {train_df.shape}")
-    
+
     print("📊 Calculating RUL...")
     train_df = calculate_rul(train_df)
-    
+
     print("🔧 Fitting scaler...")
     scaler = fit_scaler(train_df)
-    
+
     print("📏 Scaling features...")
     train_scaled = scale_features(train_df, scaler)
-    
+
     print(f"⏳ Generating sequences (seq_len={args.seq_length})...")
     X_train, y_train = generate_sequences(train_scaled, args.seq_length, FEATURE_COLS)
     print(f"   X_train shape: {X_train.shape}")
     print(f"   y_train shape: {y_train.shape}")
-    
+
     # Create model
     input_size = X_train.shape[2]
     print(f"🏗️  Building {args.model.upper()} model (input_size={input_size})...")
     model = get_model(args.model, input_size=input_size, seq_len=args.seq_length)
     print(model)
-    
+
     # Convert to tensors
     X_train_tensor = torch.tensor(X_train, dtype=torch.float32)
     y_train_tensor = torch.tensor(y_train, dtype=torch.float32).view(-1, 1)
-    
+
     # Train model
     print(f"🚀 Training {args.model.upper()} model...")
     model, loss_history = train_model(
@@ -186,22 +181,20 @@ def main():
         batch_size=args.batch_size,
         lr=args.lr,
     )
-    
+
     # Evaluate on test set
     print("\n📊 Evaluating on test set...")
     test_df = load_test_data()
     rul_df = load_rul_data()
     test_scaled = scale_features(test_df, scaler)
-    X_test, y_test = generate_test_sequences(
-        test_scaled, args.seq_length, rul_df, FEATURE_COLS
-    )
+    X_test, y_test = generate_test_sequences(test_scaled, args.seq_length, rul_df, FEATURE_COLS)
     X_test_tensor = torch.tensor(X_test, dtype=torch.float32).to(device)
     y_test_tensor = torch.tensor(y_test, dtype=torch.float32)
-    
+
     rmse, mae = evaluate_model(model, X_test_tensor, y_test_tensor, device)
     print(f"   Test RMSE: {rmse:.2f}")
     print(f"   Test MAE: {mae:.2f}")
-    
+
     # Save model with versioning
     if not args.no_versioning:
         print("\n💾 Saving model version...")
@@ -218,19 +211,19 @@ def main():
                 "batch_size": args.batch_size,
                 "learning_rate": args.lr,
                 "final_loss": float(loss_history[-1]),
-            }
+            },
         )
         print(f"✅ Training complete! Model saved to: {version_dir}")
     else:
         # Old behavior: save to models/ directly
         from src.config import MODEL_DIR, MODEL_NAMES
+
         model_path = MODEL_DIR / MODEL_NAMES[args.model]
         torch.save(model.state_dict(), model_path)
         print(f"✅ Training complete! Model saved to: {model_path}")
-    
+
     print(f"   Final training loss: {loss_history[-1]:.4f}")
 
 
 if __name__ == "__main__":
     main()
-

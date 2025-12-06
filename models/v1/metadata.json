@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "model_type": "lstm",
+  "rmse": 24.03799863586752,
+  "mae": 16.80711555480957,
+  "timestamp": "2025-12-02T23:07:26.964689",
+  "sequence_length": 30,
+  "input_features": 24,
+  "feature_columns": [
+    "op_setting_1",
+    "op_setting_2",
+    "op_setting_3",
+    "sensor_1",
+    "sensor_2",
+    "sensor_3",
+    "sensor_4",
+    "sensor_5",
+    "sensor_6",
+    "sensor_7",
+    "sensor_8",
+    "sensor_9",
+    "sensor_10",
+    "sensor_11",
+    "sensor_12",
+    "sensor_13",
+    "sensor_14",
+    "sensor_15",
+    "sensor_16",
+    "sensor_17",
+    "sensor_18",
+    "sensor_19",
+    "sensor_20",
+    "sensor_21"
+  ],
+  "model_architecture": {
+    "type": "RUL_LSTM"
+  },
+  "epochs": 20,
+  "batch_size": 64,
+  "learning_rate": 0.001,
+  "final_loss": 544.5354825289695
+}

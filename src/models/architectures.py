@@ -1,17 +1,18 @@
 """
 Neural network architectures for RUL prediction.
 """
+
 import torch
 import torch.nn as nn
 
 from src.config import (
+    DROPOUT,
     HIDDEN_SIZE,
     NUM_LAYERS,
-    DROPOUT,
+    TRANSFORMER_DIM_FEEDFORWARD,
     TRANSFORMER_DIM_MODEL,
     TRANSFORMER_NHEAD,
     TRANSFORMER_NUM_LAYERS,
-    TRANSFORMER_DIM_FEEDFORWARD,
 )
 
 
@@ -137,9 +138,7 @@ class RUL_Transformer(nn.Module):
             dropout=dropout,
             batch_first=True,
         )
-        self.transformer_encoder = nn.TransformerEncoder(
-            encoder_layer, num_layers=num_layers
-        )
+        self.transformer_encoder = nn.TransformerEncoder(encoder_layer, num_layers=num_layers)
 
         # Regression head
         self.fc = nn.Linear(dim_model, 1)
@@ -158,7 +157,7 @@ def get_model(
     seq_len: int = 30,
 ) -> nn.Module:
     """Factory function to create a model by name.
-    
+
     Parameters
     ----------
     model_name : str
@@ -167,14 +166,14 @@ def get_model(
         Number of input features.
     seq_len : int, optional
         Sequence length (required for transformer), by default 30.
-        
+
     Returns
     -------
     nn.Module
         Model instance.
     """
     model_name = model_name.lower()
-    
+
     if model_name == "lstm":
         return RUL_LSTM(input_size=input_size)
     elif model_name == "bilstm":
@@ -188,4 +187,3 @@ def get_model(
             f"Unknown model name: {model_name}. "
             f"Choose from: 'lstm', 'bilstm', 'gru', 'transformer'"
         )
-

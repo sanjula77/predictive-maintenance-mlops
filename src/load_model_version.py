@@ -2,13 +2,14 @@
 Load a specific model version for inference.
 Usage: python -m src.load_model_version --version 1 --model-type lstm
 """
+
 import argparse
-import torch
-import numpy as np
 from pathlib import Path
 
-from src.model_registry import load_model_version, get_version_info
-from src.models.architectures import RUL_LSTM, RUL_BiLSTM, RUL_GRU, RUL_Transformer
+import torch
+
+from src.model_registry import get_version_info, load_model_version
+from src.models.architectures import RUL_GRU, RUL_LSTM, RUL_BiLSTM, RUL_Transformer
 from src.utils import get_device
 
 
@@ -38,9 +39,9 @@ def main():
         action="store_true",
         help="Only show model info, don't load model",
     )
-    
+
     args = parser.parse_args()
-    
+
     # Map model type to class
     model_classes = {
         "lstm": RUL_LSTM,
@@ -48,9 +49,9 @@ def main():
         "gru": RUL_GRU,
         "transformer": RUL_Transformer,
     }
-    
+
     model_class = model_classes[args.model_type]
-    
+
     # Get version info
     try:
         metadata = get_version_info(args.version)
@@ -63,50 +64,49 @@ def main():
         print(f"Input Features:  {metadata.get('input_features', 'N/A')}")
         print(f"Timestamp:       {metadata.get('timestamp', 'N/A')}")
         print("=" * 70)
-        
+
         if args.info_only:
             return
-        
+
     except FileNotFoundError as e:
         print(f"❌ Error: {e}")
         return
-    
+
     # Load model
     print(f"\n📂 Loading model version v{args.version}...")
     device = get_device()
-    
+
     try:
         model, scaler, metadata = load_model_version(
-            version=args.version,
-            model_class=model_class,
-            device=device
+            version=args.version, model_class=model_class, device=device
         )
-        
-        print(f"\n✅ Model loaded successfully!")
+
+        print("\n✅ Model loaded successfully!")
         print(f"   Model is on device: {device}")
         print(f"   Model is in eval mode: {not model.training}")
-        
+
         # Optionally save to output directory
         if args.output_dir:
             output_dir = Path(args.output_dir)
             output_dir.mkdir(parents=True, exist_ok=True)
-            
+
             # Save model
             model_path = output_dir / "model.pth"
             torch.save(model.state_dict(), model_path)
-            
+
             # Save scaler
             import joblib
+
             scaler_path = output_dir / "scaler.pkl"
             joblib.dump(scaler, scaler_path)
-            
+
             print(f"\n💾 Model files saved to: {output_dir}")
             print(f"   - Model: {model_path}")
             print(f"   - Scaler: {scaler_path}")
-        
-        print(f"\n💡 Model is ready for inference!")
-        print(f"   Use model.eval() and model(input_tensor) for predictions")
-        
+
+        print("\n💡 Model is ready for inference!")
+        print("   Use model.eval() and model(input_tensor) for predictions")
+
     except Exception as e:
         print(f"❌ Error loading model: {e}")
         raise
@@ -114,4 +114,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

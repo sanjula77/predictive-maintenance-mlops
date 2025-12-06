@@ -1,13 +1,16 @@
 """
 Pydantic schemas for API request/response validation.
 """
-from pydantic import BaseModel, Field, field_validator, model_validator
-from typing import List, Optional, Union
+
 from enum import Enum
+from typing import List, Optional
+
+from pydantic import BaseModel, Field, field_validator, model_validator
 
 
 class ModelType(str, Enum):
     """Supported model types."""
+
     LSTM = "lstm"
     BILSTM = "bilstm"
     GRU = "gru"
@@ -16,6 +19,7 @@ class ModelType(str, Enum):
 
 class SensorReading(BaseModel):
     """Single sensor reading with all features."""
+
     op_setting_1: float = Field(0.0, description="Operating setting 1", ge=0.0)
     op_setting_2: float = Field(0.0, description="Operating setting 2", ge=0.0)
     op_setting_3: float = Field(100.0, description="Operating setting 3", ge=0.0)
@@ -41,18 +45,18 @@ class SensorReading(BaseModel):
     sensor_20: float = Field(..., description="Sensor 20 reading")
     sensor_21: float = Field(..., description="Sensor 21 reading")
 
-    model_config = {
-        "extra": "ignore"
-    }
+    model_config = {"extra": "ignore"}
 
     def to_list(self) -> List[float]:
         """Convert to list in correct feature order."""
         from src.config import FEATURE_COLS
+
         return [getattr(self, col) for col in FEATURE_COLS]
 
 
 class PredictionRequest(BaseModel):
     """Request model for RUL prediction."""
+
     sensor_readings: Optional[List[SensorReading]] = Field(
         None,
         description="List of sensor readings (last 30 cycles recommended)",
@@ -70,7 +74,7 @@ class PredictionRequest(BaseModel):
             raise ValueError("At least one sensor reading is required")
         return v
 
-    @model_validator(mode='after')
+    @model_validator(mode="after")
     def check_at_least_one_field(self):
         """Ensure at least one field is provided."""
         if not self.sensor_readings and not self.sensor_data:
@@ -113,9 +117,10 @@ class PredictionRequest(BaseModel):
                         "sensor_18": 2388,
                         "sensor_19": 100.0,
                         "sensor_20": 39.06,
-                        "sensor_21": 23.4190
+                        "sensor_21": 23.4190,
                     }
-                ] * 30  # 30 cycles
+                ]
+                * 30  # 30 cycles
             }
         }
     }
@@ -123,11 +128,12 @@ class PredictionRequest(BaseModel):
 
 class SimplePredictionRequest(BaseModel):
     """Simplified request that accepts raw arrays."""
+
     sensor_data: List[List[float]] = Field(
         ...,
         description="2D array: [cycles][features]. Each inner array should have 24 features in order: op_setting_1, op_setting_2, op_setting_3, sensor_1 through sensor_21",
         min_items=1,
-        max_items=100
+        max_items=100,
     )
 
     @field_validator("sensor_data")
@@ -135,11 +141,12 @@ class SimplePredictionRequest(BaseModel):
     def validate_shape(cls, v):
         """Validate that each reading has correct number of features."""
         from src.config import FEATURE_COLS
+
         expected_features = len(FEATURE_COLS)
-        
+
         if v is None:
             return v
-            
+
         for i, reading in enumerate(v):
             if len(reading) != expected_features:
                 raise ValueError(
@@ -152,8 +159,34 @@ class SimplePredictionRequest(BaseModel):
         "json_schema_extra": {
             "example": {
                 "sensor_data": [
-                    [0.0, 0.0, 100.0, 518.67, 641.82, 1589.70, 1400.60, 14.62, 21.61, 554.36, 2388.06, 9046.19, 1.3, 47.47, 521.66, 2388.02, 8138.62, 8.4195, 0.03, 392, 2388, 100.0, 39.06, 23.4190]
-                ] * 30
+                    [
+                        0.0,
+                        0.0,
+                        100.0,
+                        518.67,
+                        641.82,
+                        1589.70,
+                        1400.60,
+                        14.62,
+                        21.61,
+                        554.36,
+                        2388.06,
+                        9046.19,
+                        1.3,
+                        47.47,
+                        521.66,
+                        2388.02,
+                        8138.62,
+                        8.4195,
+                        0.03,
+                        392,
+                        2388,
+                        100.0,
+                        39.06,
+                        23.4190,
+                    ]
+                ]
+                * 30
             }
         }
     }
@@ -161,12 +194,12 @@ class SimplePredictionRequest(BaseModel):
 
 class PredictionResponse(BaseModel):
     """Response model for RUL prediction."""
+
     predicted_rul: float = Field(..., description="Predicted Remaining Useful Life")
     model_version: int = Field(..., description="Model version used")
     model_type: str = Field(..., description="Model type used")
     confidence_interval: Optional[dict] = Field(
-        None,
-        description="Confidence interval (if available)"
+        None, description="Confidence interval (if available)"
     )
 
     model_config = {
@@ -175,7 +208,7 @@ class PredictionResponse(BaseModel):
                 "predicted_rul": 125.5,
                 "model_version": 1,
                 "model_type": "lstm",
-                "confidence_interval": None
+                "confidence_interval": None,
             }
         }
     }
@@ -183,6 +216,7 @@ class PredictionResponse(BaseModel):
 
 class HealthResponse(BaseModel):
     """Health check response."""
+
     status: str = Field(..., description="Service status")
     message: str = Field(..., description="Status message")
     version: str = Field(..., description="API version")
@@ -190,6 +224,7 @@ class HealthResponse(BaseModel):
 
 class ModelInfoResponse(BaseModel):
     """Model information response."""
+
     version: int
     model_type: str
     rmse: float

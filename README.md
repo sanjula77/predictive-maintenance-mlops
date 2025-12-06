@@ -1,5 +1,12 @@
 # Predictive Maintenance MLOps
 
+[![CI - Lint & Test](https://github.com/yourusername/predictive-maintenance-mlops/workflows/CI%20-%20Lint%20%26%20Test/badge.svg)](https://github.com/yourusername/predictive-maintenance-mlops/actions/workflows/ci.yml)
+[![Build Docker Image](https://github.com/yourusername/predictive-maintenance-mlops/workflows/Build%20Docker%20Image/badge.svg)](https://github.com/yourusername/predictive-maintenance-mlops/actions/workflows/docker-build.yml)
+[![Test API](https://github.com/yourusername/predictive-maintenance-mlops/workflows/Test%20API/badge.svg)](https://github.com/yourusername/predictive-maintenance-mlops/actions/workflows/test-api.yml)
+[![Security Checks](https://github.com/yourusername/predictive-maintenance-mlops/workflows/Security%20Checks/badge.svg)](https://github.com/yourusername/predictive-maintenance-mlops/actions/workflows/security.yml)
+
+> **Note**: Replace `yourusername` in the badge URLs with your actual GitHub username/organization.
+
 A production-ready MLOps pipeline for predictive maintenance using Remaining Useful Life (RUL) prediction on CMAPSS aircraft engine data.
 
 ## 🚀 Features
@@ -157,9 +164,35 @@ All configuration is centralized in `src/config.py`:
 ## 🧪 Testing
 
 ```bash
-# Run tests
+# Install development dependencies
+pip install -r requirements-dev.txt
+
+# Run all tests
 pytest tests/
+
+# Run with coverage
+pytest tests/ --cov=src --cov-report=html
+
+# Run specific test file
+pytest tests/test_models.py -v
+
+# Run linting
+flake8 src/
+black --check src/
+isort --check-only src/
 ```
+
+## 🔄 CI/CD Pipeline
+
+This project includes automated CI/CD pipelines using GitHub Actions:
+
+- **Linting & Testing**: Automatic code quality checks and unit tests on every push
+- **Docker Build**: Automatic Docker image building when code changes
+- **Docker Push**: Pushes images to Docker Hub on version tags (optional)
+- **API Testing**: Automated API endpoint testing
+- **Security Checks**: Dependency vulnerability scanning
+
+See [`.github/workflows/`](.github/workflows/) for workflow configurations.
 
 ## 📝 License
 

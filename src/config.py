@@ -2,7 +2,7 @@
 Configuration file for Predictive Maintenance MLOps project.
 Contains all hyperparameters, paths, and constants.
 """
-import os
+
 from pathlib import Path
 
 # ===============================
@@ -22,15 +22,15 @@ RUL_FILE = DATA_DIR / "RUL_FD001.txt"
 # Hyperparameters
 # ===============================
 SEED = 42
-SEQ_LENGTH = 30      # Length of sequence window
-BATCH_SIZE = 64      # Batch size for all models
-EPOCHS = 20          # Default number of epochs
-LR = 1e-3            # Default learning rate
+SEQ_LENGTH = 30  # Length of sequence window
+BATCH_SIZE = 64  # Batch size for all models
+EPOCHS = 20  # Default number of epochs
+LR = 1e-3  # Default learning rate
 
 # Model architecture hyperparameters
-HIDDEN_SIZE = 64     # Number of LSTM/GRU units
-NUM_LAYERS = 2       # Number of stacked layers
-DROPOUT = 0.2        # Dropout rate
+HIDDEN_SIZE = 64  # Number of LSTM/GRU units
+NUM_LAYERS = 2  # Number of stacked layers
+DROPOUT = 0.2  # Dropout rate
 
 # Transformer-specific hyperparameters
 TRANSFORMER_DIM_MODEL = 128
@@ -43,23 +43,60 @@ TRANSFORMER_DIM_FEEDFORWARD = 128
 # ===============================
 # CMAPSS FD001 has 26 columns
 COLUMN_NAMES = [
-    "engine_id", "cycle",
-    "op_setting_1", "op_setting_2", "op_setting_3",
-    "sensor_1", "sensor_2", "sensor_3", "sensor_4", "sensor_5",
-    "sensor_6", "sensor_7", "sensor_8", "sensor_9", "sensor_10",
-    "sensor_11", "sensor_12", "sensor_13", "sensor_14", "sensor_15",
-    "sensor_16", "sensor_17", "sensor_18", "sensor_19", "sensor_20",
-    "sensor_21"
+    "engine_id",
+    "cycle",
+    "op_setting_1",
+    "op_setting_2",
+    "op_setting_3",
+    "sensor_1",
+    "sensor_2",
+    "sensor_3",
+    "sensor_4",
+    "sensor_5",
+    "sensor_6",
+    "sensor_7",
+    "sensor_8",
+    "sensor_9",
+    "sensor_10",
+    "sensor_11",
+    "sensor_12",
+    "sensor_13",
+    "sensor_14",
+    "sensor_15",
+    "sensor_16",
+    "sensor_17",
+    "sensor_18",
+    "sensor_19",
+    "sensor_20",
+    "sensor_21",
 ]
 
 # Feature columns (exclude engine_id, cycle, RUL)
 FEATURE_COLS = [
-    "op_setting_1", "op_setting_2", "op_setting_3",
-    "sensor_1", "sensor_2", "sensor_3", "sensor_4", "sensor_5",
-    "sensor_6", "sensor_7", "sensor_8", "sensor_9", "sensor_10",
-    "sensor_11", "sensor_12", "sensor_13", "sensor_14", "sensor_15",
-    "sensor_16", "sensor_17", "sensor_18", "sensor_19", "sensor_20",
-    "sensor_21"
+    "op_setting_1",
+    "op_setting_2",
+    "op_setting_3",
+    "sensor_1",
+    "sensor_2",
+    "sensor_3",
+    "sensor_4",
+    "sensor_5",
+    "sensor_6",
+    "sensor_7",
+    "sensor_8",
+    "sensor_9",
+    "sensor_10",
+    "sensor_11",
+    "sensor_12",
+    "sensor_13",
+    "sensor_14",
+    "sensor_15",
+    "sensor_16",
+    "sensor_17",
+    "sensor_18",
+    "sensor_19",
+    "sensor_20",
+    "sensor_21",
 ]
 
 # ===============================
@@ -69,7 +106,7 @@ MODEL_NAMES = {
     "lstm": "rul_lstm.pth",
     "bilstm": "bi_lstm.pth",
     "gru": "gru.pth",
-    "transformer": "transformer_rul.pth"
+    "transformer": "transformer_rul.pth",
 }
 
 SCALER_NAME = "scaler.pkl"
@@ -79,4 +116,3 @@ SCALER_NAME = "scaler.pkl"
 # ===============================
 MODEL_DIR.mkdir(parents=True, exist_ok=True)
 SCALER_DIR.mkdir(parents=True, exist_ok=True)
-
