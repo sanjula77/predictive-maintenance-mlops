@@ -20,6 +20,7 @@ jobs:
   deploy:
     needs: quick-check
     runs-on: ubuntu-latest
+    timeout-minutes: 30
     if: github.ref == 'refs/heads/main'
     
     steps:
@@ -52,9 +53,11 @@ jobs:
             echo "🛑 Stopping existing containers..."
             docker-compose down || true
             
-            # Build new containers
+            # Build new containers (use cache for faster builds)
             echo "🔨 Building Docker containers..."
-            docker-compose build --no-cache
+            echo "⏱️ This may take 5-10 minutes (PyTorch installation is large)..."
+            # Use build cache for faster subsequent builds
+            docker-compose build
             
             # Start containers
             echo "▶️ Starting containers..."
