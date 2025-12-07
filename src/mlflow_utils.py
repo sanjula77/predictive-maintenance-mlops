@@ -348,8 +348,8 @@ def promote_model_to_production(model_name: str, version: int) -> None:
     try:
         # Get model info to check for existing production alias
         model_info = client.get_registered_model(name=model_name)
-        aliases_dict = getattr(model_info, 'aliases', {}) or {}
-        
+        aliases_dict = getattr(model_info, "aliases", {}) or {}
+
         # If production alias exists, delete it first (aliases are unique)
         if "production" in aliases_dict:
             client.delete_registered_model_alias(name=model_name, alias="production")
@@ -358,11 +358,7 @@ def promote_model_to_production(model_name: str, version: int) -> None:
         logger.debug(f"No existing production alias to remove: {e}")
 
     # Set alias for new model version
-    client.set_registered_model_alias(
-        name=model_name,
-        alias="production",
-        version=str(version)
-    )
+    client.set_registered_model_alias(name=model_name, alias="production", version=str(version))
     logger.info(f"Promoted model {model_name} version {version} to Production (using alias)")
 
 
@@ -440,7 +436,7 @@ def list_registered_models(model_name: Optional[str] = None) -> list:
         try:
             model_info = client.get_registered_model(name=model_name)
             # MLflow returns aliases as a dict: {alias_name: version}
-            aliases_dict = getattr(model_info, 'aliases', {}) or {}
+            aliases_dict = getattr(model_info, "aliases", {}) or {}
             # Reverse mapping: {version: [alias_names]}
             for alias_name, alias_version in aliases_dict.items():
                 if alias_version not in model_aliases:
@@ -448,19 +444,19 @@ def list_registered_models(model_name: Optional[str] = None) -> list:
                 model_aliases[alias_version].append(alias_name)
         except Exception as e:
             logger.warning(f"Could not get aliases: {e}")
-        
+
         for version in versions:
             version_str = str(version.version)
             # Get aliases for this version
             aliases = model_aliases.get(version_str, [])
-            
+
             # Determine stage based on aliases (for backward compatibility)
             stage = "None"
             if "production" in aliases:
                 stage = "Production"
             elif "staging" in aliases:
                 stage = "Staging"
-            
+
             model_list.append(
                 {
                     "version": version.version,

@@ -301,7 +301,7 @@ def train_all_models_with_mlflow(
     if results:
         best_model_type = min(results.keys(), key=lambda k: results[k]["rmse"])
         best_result = results[best_model_type]
-        
+
         print(
             f"\n🏆 Best model: {best_model_type.upper()} (RMSE: {best_result['rmse']:.2f}, MAE: {best_result['mae']:.2f})"
         )
@@ -309,7 +309,9 @@ def train_all_models_with_mlflow(
         if auto_promote and "version" in best_result:
             version = best_result["version"]
             promote_model_to_production("RUL-Prediction-Model", int(version))
-            print(f"🚀 Promoted best model ({best_model_type.upper()} version {version}) to Production")
+            print(
+                f"🚀 Promoted best model ({best_model_type.upper()} version {version}) to Production"
+            )
         elif auto_promote:
             print("⚠️  Warning: Could not auto-promote - model version not found in results")
 
