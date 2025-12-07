@@ -36,6 +36,12 @@ from src.model_registry import get_version_info, list_model_versions, load_model
 from src.models.architectures import RUL_GRU, RUL_LSTM, RUL_BiLSTM, RUL_Transformer
 from src.utils import get_device
 
+# Configure logging first (before MLflow check)
+logging.basicConfig(
+    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+)
+logger = logging.getLogger(__name__)
+
 # MLflow support (optional)
 try:
     from src.mlflow_utils import get_production_model, setup_mlflow
@@ -43,12 +49,6 @@ try:
 except ImportError:
     MLFLOW_AVAILABLE = False
     logger.warning("MLflow not available. Install mlflow to use MLflow model registry.")
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-)
-logger = logging.getLogger(__name__)
 
 # Model and scaler cache
 _model_cache = {}
