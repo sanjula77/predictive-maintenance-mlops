@@ -58,3 +58,13 @@ Dockerfile
 .dockerignore
 docker-compose.yml
 
+# MLflow (will be mounted as volume)
+mlruns/
+
+# Coverage reports
+htmlcov/
+coverage.xml
+
+# Jupyter notebooks (optional - uncomment if you want to exclude)
+# notebooks/
+

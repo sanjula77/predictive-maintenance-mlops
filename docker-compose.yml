@@ -1,16 +1,23 @@
-version: '3.8'
-
 services:
   api:
-    build: .
+    build: 
+      context: .
+      dockerfile: Dockerfile
     container_name: predictive-maintenance-api
     ports:
       - "8000:8000"
     volumes:
+      # Models directory (for legacy model registry)
       - ./models:/app/models
+      # Data directory
       - ./data:/app/data
+      # MLflow tracking and registry (important for MLflow models)
+      - ./mlruns:/app/mlruns
     environment:
       - PYTHONUNBUFFERED=1
+      - USE_MLFLOW=true
+      # Optional: Set MLflow tracking URI if using remote server
+      # - MLFLOW_TRACKING_URI=http://mlflow-server:5000
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "python", "-c", "import requests; requests.get('http://localhost:8000/health')"]
@@ -18,4 +25,10 @@ services:
       timeout: 10s
       retries: 3
       start_period: 40s
+    networks:
+      - predictive-maintenance-network
+
+networks:
+  predictive-maintenance-network:
+    driver: bridge
 

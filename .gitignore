@@ -91,6 +91,8 @@ dmypy.json
 # Coverage reports
 htmlcov/
 .coverage
+coverage.xml
+*.coverage
 
 # pytest
 .pytest_cache/

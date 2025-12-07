@@ -3,6 +3,7 @@ Data preprocessing functions: RUL calculation, scaling, and sequence generation.
 """
 
 from pathlib import Path
+from typing import Optional
 
 import joblib
 import numpy as np
@@ -44,7 +45,7 @@ def calculate_rul(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def fit_scaler(train_df: pd.DataFrame, save_path: Path = None) -> StandardScaler:
+def fit_scaler(train_df: pd.DataFrame, save_path: Optional[Path] = None) -> StandardScaler:
     """Fit StandardScaler on training data features.
 
     Parameters
@@ -72,7 +73,7 @@ def fit_scaler(train_df: pd.DataFrame, save_path: Path = None) -> StandardScaler
     return scaler
 
 
-def load_scaler(scaler_path: Path = None) -> StandardScaler:
+def load_scaler(scaler_path: Optional[Path] = None) -> StandardScaler:
     """Load a saved StandardScaler.
 
     Parameters
@@ -115,7 +116,7 @@ def scale_features(df: pd.DataFrame, scaler: StandardScaler) -> pd.DataFrame:
 
 
 def generate_sequences(
-    df: pd.DataFrame, seq_len: int, feature_cols: list = None
+    df: pd.DataFrame, seq_len: int, feature_cols: Optional[list] = None
 ) -> tuple[np.ndarray, np.ndarray]:
     """Generate sequences for training/validation.
 
@@ -157,7 +158,7 @@ def generate_sequences(
 
 
 def generate_test_sequences(
-    df: pd.DataFrame, seq_len: int, rul_df: pd.DataFrame, feature_cols: list = None
+    df: pd.DataFrame, seq_len: int, rul_df: pd.DataFrame, feature_cols: Optional[list] = None
 ) -> tuple[np.ndarray, np.ndarray]:
     """Generate sequences for test set evaluation.
 

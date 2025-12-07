@@ -8,7 +8,7 @@ import argparse
 from src.model_registry import get_version_info, list_model_versions
 
 try:
-    from tabulate import tabulate
+    from tabulate import tabulate  # type: ignore[import-untyped]
 
     HAS_TABULATE = True
 except ImportError:

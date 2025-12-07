@@ -45,7 +45,7 @@ def predict_rul(
     with torch.no_grad():
         y_pred = model(X_tensor).cpu().numpy().flatten()
 
-    return y_pred
+    return np.asarray(y_pred)  # type: ignore[no-any-return]
 
 
 def main():

@@ -36,6 +36,14 @@ from src.model_registry import get_version_info, list_model_versions, load_model
 from src.models.architectures import RUL_GRU, RUL_LSTM, RUL_BiLSTM, RUL_Transformer
 from src.utils import get_device
 
+# MLflow support (optional)
+try:
+    from src.mlflow_utils import get_production_model, setup_mlflow
+    MLFLOW_AVAILABLE = True
+except ImportError:
+    MLFLOW_AVAILABLE = False
+    logger.warning("MLflow not available. Install mlflow to use MLflow model registry.")
+
 # Configure logging
 logging.basicConfig(
     level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s"
@@ -47,6 +55,19 @@ _model_cache = {}
 _scaler_cache = {}
 _metadata_cache = {}
 _device = get_device()
+
+# MLflow model cache
+_mlflow_model = None
+_mlflow_scaler = None
+_use_mlflow = False
+
+# Initialize MLflow if available and enabled
+if MLFLOW_AVAILABLE:
+    import os
+    if os.getenv("USE_MLFLOW", "false").lower() == "true":
+        setup_mlflow()
+        _use_mlflow = True
+        logger.info("MLflow enabled - API will use Production model from MLflow registry")
 
 # Model class mapping
 MODEL_CLASSES = {
@@ -100,14 +121,96 @@ app.add_middleware(
 def load_model_if_needed(version: int, model_type: str):
     """
     Load model and scaler if not already cached.
+    Uses MLflow Production model if MLflow is enabled, otherwise uses legacy registry.
 
     Args:
-        version: Model version number
-        model_type: Model type (lstm, bilstm, gru, transformer)
+        version: Model version number (ignored if MLflow enabled)
+        model_type: Model type (lstm, bilstm, gru, transformer) (ignored if MLflow enabled)
 
     Returns:
         Tuple of (model, scaler, metadata)
     """
+    global _use_mlflow, _mlflow_model, _mlflow_scaler
+    
+    # Use MLflow Production model if enabled
+    if _use_mlflow and MLFLOW_AVAILABLE:
+        if _mlflow_model is None:
+            try:
+                _mlflow_model = get_production_model()
+                # Note: MLflow models should include scaler in artifacts
+                # For now, we'll still use the legacy scaler loading
+                from src.data.preprocessing import load_scaler
+                _mlflow_scaler = load_scaler()
+                logger.info("Loaded Production model from MLflow registry")
+            except Exception as e:
+                logger.error(f"Failed to load MLflow model: {e}")
+                logger.info("Falling back to legacy model registry")
+                _use_mlflow = False
+
+        if _mlflow_model is not None:
+            # Get actual model info from MLflow Production model (using alias)
+            try:
+                from mlflow.tracking import MlflowClient
+                from src.mlflow_utils import MODEL_REGISTRY_NAME
+                
+                client = MlflowClient()
+                # Get Production model version using alias
+                try:
+                    # Get model info to find production alias
+                    model_info = client.get_registered_model(name=MODEL_REGISTRY_NAME)
+                    aliases_dict = getattr(model_info, 'aliases', {}) or {}
+                    
+                    # Find version with production alias
+                    prod_version_str = aliases_dict.get("production")
+                    if prod_version_str:
+                        # Get the version object
+                        versions = client.search_model_versions(f"name='{MODEL_REGISTRY_NAME}'")
+                        prod_version = None
+                        for v in versions:
+                            if str(v.version) == str(prod_version_str):
+                                prod_version = v
+                                break
+                        
+                        if prod_version:
+                            run_id = prod_version.run_id
+                            run = client.get_run(run_id)
+                            params = run.data.params
+                            actual_model_type = params.get("model_type", "unknown")
+                            version_num = int(prod_version.version)
+                            
+                            metadata = {
+                                "version": version_num,
+                                "model_type": actual_model_type,
+                                "stage": "Production",
+                                "source": "mlflow_registry",
+                                "run_id": run_id,
+                            }
+                        else:
+                            raise ValueError("Production alias version not found")
+                    else:
+                        # Fallback if no Production alias found
+                        metadata = {
+                            "version": "production",
+                            "model_type": "unknown",
+                            "source": "mlflow_registry",
+                        }
+                except Exception as e:
+                    logger.warning(f"Could not get Production model info: {e}")
+                    metadata = {
+                        "version": "production",
+                        "model_type": "unknown",
+                        "source": "mlflow_registry",
+                    }
+            except Exception as e:
+                logger.warning(f"Could not get MLflow model metadata: {e}")
+                metadata = {
+                    "version": "production",
+                    "model_type": "mlflow",
+                    "source": "mlflow_registry",
+                }
+            return _mlflow_model, _mlflow_scaler, metadata
+
+    # Legacy model loading
     cache_key = f"{model_type.lower()}_v{version}"
 
     if cache_key not in _model_cache:
@@ -165,14 +268,68 @@ def health():
 def list_available_models():
     """
     List all available model versions.
+    Shows MLflow models if MLflow is enabled, otherwise shows legacy registry models.
 
     Returns:
         Dictionary with list of available models and their metadata
     """
     try:
+        # If MLflow is enabled, show MLflow models
+        if _use_mlflow and MLFLOW_AVAILABLE:
+            from src.mlflow_utils import list_registered_models
+            from mlflow.tracking import MlflowClient
+            
+            client = MlflowClient()
+            registered_models = list_registered_models()
+            
+            # Get detailed info for each model version
+            mlflow_models = []
+            for model_info in registered_models:
+                version_num = int(model_info["version"])
+                run_id = model_info["run_id"]
+                
+                # Get run details to extract metrics and params
+                try:
+                    run = client.get_run(run_id)
+                    params = run.data.params
+                    metrics = run.data.metrics
+                    
+                    # Format similar to legacy registry
+                    formatted_model = {
+                        "version": version_num,
+                        "model_type": params.get("model_type", "unknown"),
+                        "rmse": metrics.get("test_rmse", 0.0),
+                        "mae": metrics.get("test_mae", 0.0),
+                        "timestamp": model_info.get("created_at", ""),
+                        "sequence_length": int(params.get("sequence_length", 30)),
+                        "input_features": 24,  # Standard for this project
+                        "stage": model_info.get("stage", "None"),  # For backward compatibility
+                        "aliases": model_info.get("aliases", []),  # New: actual aliases
+                        "run_id": run_id,
+                        "epochs": int(params.get("epochs", 0)),
+                        "batch_size": int(params.get("batch_size", 64)),
+                        "learning_rate": float(params.get("learning_rate", 0.001)),
+                        "final_loss": metrics.get("train_loss", 0.0),
+                        "source": "mlflow_registry",
+                    }
+                    mlflow_models.append(formatted_model)
+                except Exception as e:
+                    logger.warning(f"Could not get details for MLflow model version {version_num}: {e}")
+                    # Add basic info even if details fail
+                    mlflow_models.append({
+                        "version": version_num,
+                        "model_type": "unknown",
+                        "stage": model_info.get("stage", "None"),
+                        "source": "mlflow_registry",
+                    })
+            
+            logger.info(f"Listing {len(mlflow_models)} MLflow model versions")
+            return {"count": len(mlflow_models), "models": mlflow_models, "source": "mlflow"}
+        
+        # Legacy registry
         versions = list_model_versions()
-        logger.info(f"Listing {len(versions)} model versions")
-        return {"count": len(versions), "models": versions}
+        logger.info(f"Listing {len(versions)} legacy model versions")
+        return {"count": len(versions), "models": versions, "source": "legacy"}
     except Exception as e:
         logger.error(f"Error listing models: {e}")
         raise HTTPException(status_code=500, detail=str(e))
@@ -297,10 +454,14 @@ def predict_rul(
         inference_time = time.time() - start_time
         logger.info(f"Prediction completed in {inference_time:.3f}s: RUL={predicted_rul:.2f}")
 
+        # Use metadata if available (for MLflow), otherwise use query params
+        response_version = metadata.get("version", version)
+        response_model_type = metadata.get("model_type", model_type.value)
+        
         return PredictionResponse(
             predicted_rul=predicted_rul,
-            model_version=version,
-            model_type=model_type.value,
+            model_version=response_version,
+            model_type=response_model_type,
             confidence_interval=None,  # Can be added later with ensemble models
         )
 
@@ -402,10 +563,14 @@ def predict_rul_simple(
         inference_time = time.time() - start_time
         logger.info(f"Prediction completed in {inference_time:.3f}s: RUL={predicted_rul:.2f}")
 
+        # Use metadata if available (for MLflow), otherwise use query params
+        response_version = metadata.get("version", version)
+        response_model_type = metadata.get("model_type", model_type.value)
+
         return PredictionResponse(
             predicted_rul=predicted_rul,
-            model_version=version,
-            model_type=model_type.value,
+            model_version=response_version,
+            model_type=response_model_type,
             confidence_interval=None,
         )
 

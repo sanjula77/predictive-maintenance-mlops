@@ -8,7 +8,7 @@ Structure: models/v1/, models/v2/, etc.
 import json
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict, Optional, cast
 
 import joblib
 import torch
@@ -58,7 +58,7 @@ def save_model_version(
     mae: float,
     model_type: str,
     sequence_length: int = SEQ_LENGTH,
-    input_features: int = None,
+    input_features: Optional[int] = None,
     additional_metadata: Optional[Dict[str, Any]] = None,
     version: Optional[int] = None,
 ) -> Path:
@@ -155,7 +155,7 @@ def save_model_version(
     print(f"   - Scaler: {scaler_path}")
     print(f"   - Metadata: {metadata_path}")
 
-    return version_dir
+    return version_dir  # type: ignore[no-any-return]
 
 
 def load_model_version(
@@ -238,7 +238,7 @@ def list_model_versions() -> list[Dict[str, Any]]:
     list[dict]
         List of metadata dictionaries for each version.
     """
-    versions = []
+    versions: list[Dict[str, Any]] = []
 
     if not MODEL_DIR.exists():
         return versions
@@ -279,4 +279,4 @@ def get_version_info(version: int) -> Dict[str, Any]:
         raise FileNotFoundError(f"Version v{version} not found")
 
     with open(metadata_path, "r") as f:
-        return json.load(f)
+        return cast(Dict[str, Any], json.load(f))
