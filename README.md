@@ -240,6 +240,45 @@ docker-compose up -d --build
 
 See [Docker Guide](docs/DOCKER.md) for detailed instructions.
 
+## 🚀 CI/CD & Automated Deployment
+
+### Automated Deployment to Production
+
+The project includes automated CI/CD deployment using GitHub Actions:
+
+**How it works:**
+1. Push code to `main` branch
+2. GitHub Actions runs tests automatically
+3. If tests pass → Code deploys to Ubuntu server via SSH
+4. Docker containers rebuild with new code
+5. API restarts with latest version
+6. Health check verifies deployment
+
+### Quick Setup
+
+**1. Generate SSH Key:**
+```powershell
+ssh-keygen -t ed25519 -C "github-actions" -f $env:USERPROFILE\.ssh\github_actions_deploy
+```
+
+**2. Add Public Key to Server:**
+```powershell
+type $env:USERPROFILE\.ssh\github_actions_deploy.pub | ssh ubuntu@80.225.215.211 "cat >> ~/.ssh/authorized_keys"
+```
+
+**3. Add GitHub Secrets:**
+- Go to: Repository → Settings → Secrets → Actions
+- Add: `SSH_PRIVATE_KEY`, `SERVER_HOST`, `SERVER_USER`
+
+**4. Test:**
+```powershell
+git push origin main
+# Watch deployment in GitHub Actions tab
+```
+
+**Quick Setup Guide:** See [DEPLOYMENT_SETUP.md](DEPLOYMENT_SETUP.md)  
+**Complete Guide:** See [CI/CD Deployment Guide](docs/CI_CD_DEPLOYMENT.md)
+
 ## 📚 Documentation
 
 Comprehensive documentation is available in the `docs/` directory:
@@ -252,6 +291,7 @@ Comprehensive documentation is available in the `docs/` directory:
 - **[Docker Guide](docs/DOCKER.md)** - Docker deployment and management
 - **[Deployment Guide](docs/DEPLOYMENT.md)** - Production deployment strategies
 - **[CI/CD Guide](docs/CI_CD.md)** - Continuous Integration setup
+- **[CI/CD Deployment](docs/CI_CD_DEPLOYMENT.md)** - Automated deployment setup
 - **[Testing Guide](docs/TESTING.md)** - Testing framework and practices
 
 ## 🧪 Model Architectures
@@ -347,3 +387,5 @@ For issues, questions, or contributions:
 ---
 
 **Status**: ✅ Production-ready MLOps pipeline with MLflow integration
+#   C I / C D   T e s t  
+ 
