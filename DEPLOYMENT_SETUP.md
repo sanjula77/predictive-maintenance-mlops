@@ -25,9 +25,28 @@ exit
 
 ## Step 3: Get Private Key for GitHub
 
+**IMPORTANT:** The private key must be in OpenSSH format (not PuTTY format).
+
 ```powershell
-# Display private key (copy entire output)
+# Display private key (copy entire output including BEGIN/END lines)
 type $env:USERPROFILE\.ssh\github_actions_deploy
+
+# The key should look like this:
+# -----BEGIN OPENSSH PRIVATE KEY-----
+# b3BlbnNzaC1rZXktdjEAAAAABG5vbmUAAAAEbm9uZQAAAAAAAAABAAACFwAAAAdzc2gtcn
+# ... (many lines) ...
+# -----END OPENSSH PRIVATE KEY-----
+
+# OR if it's in old format:
+# -----BEGIN RSA PRIVATE KEY-----
+# ... (many lines) ...
+# -----END RSA PRIVATE KEY-----
+```
+
+**If your key is in PuTTY format (.ppk), convert it:**
+```powershell
+# Install PuTTY tools if needed, then convert:
+puttygen github_actions_deploy.ppk -O private-openssh -o github_actions_deploy
 ```
 
 ## Step 4: Add GitHub Secrets
