@@ -154,6 +154,7 @@ def load_model_if_needed(version: int, model_type: str):
             # Get actual model info from MLflow Production model (using alias)
             try:
                 from mlflow.tracking import MlflowClient
+
                 from src.mlflow_utils import MODEL_REGISTRY_NAME
 
                 client = MlflowClient()
@@ -279,8 +280,9 @@ def list_available_models():
     try:
         # If MLflow is enabled, show MLflow models
         if _use_mlflow and MLFLOW_AVAILABLE:
-            from src.mlflow_utils import list_registered_models
             from mlflow.tracking import MlflowClient
+
+            from src.mlflow_utils import list_registered_models
 
             client = MlflowClient()
             registered_models = list_registered_models()
