@@ -10,9 +10,9 @@ on:
     - cron: '0 0 * * 1'
 
 jobs:
-  dependency-review:
+  dependency-review-pr:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request' || github.event_name == 'push'
+    if: github.event_name == 'pull_request'
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -21,6 +21,22 @@ jobs:
       uses: actions/dependency-review-action@v3
       with:
         fail-on-severity: moderate
+
+  dependency-review-push:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push'
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Fetch full history to compare commits
+    
+    - name: Dependency Review
+      uses: actions/dependency-review-action@v3
+      with:
+        fail-on-severity: moderate
+        base-ref: ${{ github.event.before }}
+        head-ref: ${{ github.sha }}
 
   security-scan:
     runs-on: ubuntu-latest
