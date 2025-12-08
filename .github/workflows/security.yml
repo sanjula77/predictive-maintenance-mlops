@@ -12,7 +12,7 @@ on:
 jobs:
   dependency-review:
     runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
+    if: github.event_name == 'pull_request' || github.event_name == 'push'
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
