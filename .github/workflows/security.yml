@@ -10,8 +10,11 @@ on:
     - cron: '0 0 * * 1'
 
 jobs:
-  dependency-review-pr:
+  dependency-review:
     runs-on: ubuntu-latest
+    # Note: Dependency review requires GitHub Advanced Security (paid feature)
+    # For push events, it requires base-ref/head-ref which needs Advanced Security
+    # Keeping only PR-based review which works with dependency graph enabled
     if: github.event_name == 'pull_request'
     steps:
     - name: Checkout code
@@ -21,22 +24,6 @@ jobs:
       uses: actions/dependency-review-action@v3
       with:
         fail-on-severity: moderate
-
-  dependency-review-push:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'push'
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      with:
-        fetch-depth: 0  # Fetch full history to compare commits
-    
-    - name: Dependency Review
-      uses: actions/dependency-review-action@v3
-      with:
-        fail-on-severity: moderate
-        base-ref: ${{ github.event.before }}
-        head-ref: ${{ github.sha }}
 
   security-scan:
     runs-on: ubuntu-latest
